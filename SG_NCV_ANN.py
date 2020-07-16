@@ -10,7 +10,6 @@ from keras.callbacks import EarlyStopping, ModelCheckpoint
 from keras import regularizers
 import numpy as np
 import matplotlib
-# from iterstrat.ml_stratifiers import MultilabelStratifiedKFold
 from keras.wrappers.scikit_learn import KerasClassifier
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 from sklearn.metrics import confusion_matrix, accuracy_score, f1_score
@@ -23,10 +22,6 @@ from itertools import cycle
 from sklearn.utils import class_weight
 import time
 start_time = time.time()
-
-# Just disables the warning, doesn't enable AVX/FMA
-# import os
-# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 os.chdir(os.getcwd())
 ##################################################
@@ -82,10 +77,10 @@ def create_model(neurons=20, lr=0.001, hidden_layers=1, dropout_rate=0.2, l2_rat
 
 def objective_function(individual, fit_data):
     '''
-    build and test a model based on the parameters in an individual and return
-    the AUROC value
+    build and validate a model based on the parameters in an individual and return
+    the f1 score value
     '''
-    filepath = 'C:/Users/Quoc Hoan/Dropbox/PhD research/1. ANN for small dataset/Results/SG_NCV_ANN/'
+    filepath = 'path'
     #  extract the values of the parameters from the individual chromosome
     lr = individual[0]
     batch_size = individual[1]
@@ -122,10 +117,10 @@ def objective_function(individual, fit_data):
     Y_val_pred = np.argmax(Y_val_pred, axis=1)
     Y_val = np.argmax(Y_val, axis=1)
 
-    # train_acc = saved_model.evaluate(X_train, Y_train, verbose=0)
-    # # print("Train accuracy: {:.2f}%".format(train_acc[1] * 100))
-    # acc_val = accuracy_score(Y_val, Y_val_pred)
-    # # print("Validation accuracy: {:.2f}%".format(acc_val * 100))
+    train_acc = saved_model.evaluate(X_train, Y_train, verbose=0)
+    print("Train accuracy: {:.2f}%".format(train_acc[1] * 100))
+    acc_val = accuracy_score(Y_val, Y_val_pred)
+    print("Validation accuracy: {:.2f}%".format(acc_val * 100))
     f1 = f1_score(Y_val, Y_val_pred, average='micro')
     print("Micro F1-score: {:.3f}".format(f1))
     print('-----------------------')
@@ -151,13 +146,11 @@ def find_hyperpa(individual, findings='step_1'):
 
             fit_data = [X_train, X_val, Y_train, Y_val]
 
-            # ---------------------------Tuning hyper-parameters-----------------------------------------#
+            # ---------------------------optimizing hyper-parameters-----------------------------------------#
             if findings == 'step_1':
                 # Design space
-                learning_rate = [0.001, 0.005]
-                batch_size = [16, 32, 64]
-                # learning_rate = [0.001, 0.005]
-                # batch_size = [16, 32]
+                learning_rate = [0.001, 0.002, 0.005, 0.01]
+                batch_size = [8, 16, 32, 64]
                 # Search: max f1 score
                 stored_obj = {}
                 for m in learning_rate:
@@ -166,7 +159,7 @@ def find_hyperpa(individual, findings='step_1'):
                         individual[1] = n
                         obj = objective_function(individual, fit_data)
                         stored_obj[m, n] = obj
-                best_findings = max(stored_obj, key=stored_obj.get)  # tuple
+                best_findings = max(stored_obj, key=stored_obj.get) 
                 best_obj = max(stored_obj.values())
                 # Store the findings with max obj
                 print('Best findings:', best_findings)
@@ -176,10 +169,8 @@ def find_hyperpa(individual, findings='step_1'):
 
             if findings == 'step_2':
                 # Design space
-                hidden_layers = [0, 1, 2]
-                neurons = [10, 15, 20, 25]
-                # hidden_layers = [0, 1]
-                # neurons = [10, 15]
+                hidden_layers = [0, 1, 2, 3]
+                neurons = [5, 10, 15, 20, 25]
                 # Search: max f1 score
                 stored_obj = {}
                 for m in hidden_layers:
@@ -188,7 +179,7 @@ def find_hyperpa(individual, findings='step_1'):
                         individual[3] = n
                         obj = objective_function(individual, fit_data)
                         stored_obj[m, n] = obj
-                best_findings = max(stored_obj, key=stored_obj.get)  # tuple
+                best_findings = max(stored_obj, key=stored_obj.get)
                 best_obj = max(stored_obj.values())
                 # Store the findings with max obj
                 print('Best findings:', best_findings)
@@ -200,8 +191,6 @@ def find_hyperpa(individual, findings='step_1'):
                 # Design space
                 dropout_rate = [0.1, 0.2, 0.3]
                 l2_rate = [0.001, 0.01, 0.1]
-                # dropout_rate = [0.1, 0.2]
-                # l2_rate = [0.001, 0.01]
                 # Search: max f1 score
                 stored_obj = {}
                 for m in dropout_rate:
@@ -210,7 +199,7 @@ def find_hyperpa(individual, findings='step_1'):
                         individual[5] = n
                         obj = objective_function(individual, fit_data)
                         stored_obj[m, n] = obj
-                best_findings = max(stored_obj, key=stored_obj.get)  # tuple
+                best_findings = max(stored_obj, key=stored_obj.get) 
                 best_obj = max(stored_obj.values())
                 # Store the findings with max obj
                 print('Best findings:', best_findings)
@@ -250,7 +239,7 @@ def find_hyperpa(individual, findings='step_1'):
         max_idx = idx_dupes[
             [best_fitness_list[l] for l in idx_dupes].index(max([best_fitness_list[l] for l in idx_dupes]))]
         best_params = best_params_list[max_idx]
-    return best_params, max_mean_fitness  # tuple
+    return best_params, max_mean_fitness 
 
 def stepwise_search(individual, step):
     x = [individual[0], individual[1], individual[2], individual[3], individual[4], individual[5]]
